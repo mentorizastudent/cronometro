@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cronómetro Genially</title>
+  <!-- Importa la fuente Miltonian Tattoo de Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Miltonian+Tattoo&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --fg: red;            /* color del texto (rojo) */
+      --fg-dim: #a33;       /* color tenue rojizo */
+      --font: 'Miltonian Tattoo', cursive;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent !important;
+      font-family: var(--font);
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .wrap {
+      display: grid;
+      place-items: center;
+      gap: 10px;
+      min-height: 100vh;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    .timer {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+      font-weight: 700;
+      font-size: 36px; /* tamaño fijo solicitado */
+      line-height: 1;
+      user-select: none;
+    }
+
+    .sub {
+      font-size: 14px;
+      color: var(--fg-dim);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="timer" id="timer">00:00</div>
+    <div class="sub" id="status"></div>
+  </div>
+
+  <script>
+    (function(){
+      const qs = new URLSearchParams(location.search);
+      const MODE_INIT  = qs.has('init');
+      const MODE_END   = qs.has('final');
+
+      const K_START   = 'geniallyTimerStart';
+      const K_RUNNING = 'geniallyTimerRunning';
+      const K_STOPPED = 'geniallyTimerStoppedAt';
+
+      const elTimer  = document.getElementById('timer');
+      const elStatus = document.getElementById('status');
+
+      const now = () => Date.now();
+      const isRunning = () => localStorage.getItem(K_RUNNING) === '1';
+      const hasStarted = () => !!localStorage.getItem(K_START);
+      const isStopped = () => !!localStorage.getItem(K_STOPPED);
+
+      const resetAll = () => {
+        localStorage.removeItem(K_START);
+        localStorage.removeItem(K_RUNNING);
+        localStorage.removeItem(K_STOPPED);
+      };
+
+      const start = () => {
+        localStorage.setItem(K_START, String(now()));
+        localStorage.setItem(K_RUNNING, '1');
+        localStorage.removeItem(K_STOPPED);
+      };
+
+      const stop = () => {
+        localStorage.setItem(K_RUNNING, '0');
+        localStorage.setItem(K_STOPPED, String(now()));
+      };
+
+      const fmt = (ms) => {
+        const total = Math.max(0, Math.floor(ms / 1000));
+        const h = Math.floor(total / 3600);
+        const m = Math.floor((total % 3600) / 60);
+        const s = total % 60;
+        const two = (n) => String(n).padStart(2, '0');
+        return h > 0 ? `${h}:${two(m)}:${two(s)}` : `${two(m)}:${two(s)}`;
+      };
+
+      // En la página de inicio: reinicia y comienza desde cero SOLO allí
+      if (MODE_INIT) {
+        resetAll();
+        start();
+      }
+
+      // En la página final: detiene el cronómetro
+      if (MODE_END && isRunning()) {
+        stop();
+      }
+
+      let rafId;
+      function tick(){
+        render();
+        rafId = requestAnimationFrame(tick);
+      }
+
+      function render(){
+        const started = hasStarted();
+        const running = isRunning();
+        const stopped = isStopped();
+        const startAt = Number(localStorage.getItem(K_START) || 0);
+        const stoppedAt = Number(localStorage.getItem(K_STOPPED) || 0);
+
+        let elapsed = 0;
+        if (started) {
+          if (stopped && !running) {
+            elapsed = stoppedAt - startAt;
+          } else {
+            elapsed = now() - startAt;
+          }
+        }
+
+        elTimer.textContent = fmt(elapsed);
+        elStatus.textContent = '';
+      }
+
+      tick();
+
+      window.addEventListener('visibilitychange', () => {
+        if (document.hidden) cancelAnimationFrame(rafId);
+        else tick();
+      });
+    })();
+  </script>
+</body>
+</html>

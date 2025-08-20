@@ -97,13 +97,12 @@
         return h > 0 ? `${h}:${two(m)}:${two(s)}` : `${two(m)}:${two(s)}`;
       };
 
-      // En la página de inicio: reinicia y comienza desde cero SOLO allí
+      // En la página de inicio: reinicia y comienza desde cero
       if (MODE_INIT) {
         resetAll();
         start();
       }
 
-      // En la página final: detiene el cronómetro
       if (MODE_END && isRunning()) {
         stop();
       }
